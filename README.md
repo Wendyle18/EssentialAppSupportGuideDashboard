@@ -10,11 +10,11 @@ Internal support tool for the Essential Apps support team. Shopify only.
 
 ## How to Use
 
-1. Open the dashboard; the **Workflow** tab is the default starting point.
+1. Open the dashboard; the **Workflow** tab starts with Essential Announcement Bar as a worked example.
 2. Click an app in the left sidebar; its related snippets appear immediately below the app and issue selector.
-3. Select the issue type from the dropdown.
+3. Select an issue chip. The persistent **Reply draft** panel updates with a copy-ready response and matching ticket references.
 4. Review likely causes and recommended fixes, then follow the investigation checklist.
-5. Copy the console command, snippets, or reply template as needed.
+5. Filter related snippets by CSS, JavaScript, or Console, then copy a snippet, reply, or combined reply package as needed.
 6. Use **Ticket references** to search stored sample tickets by app, issue, tag, customer wording, diagnosis, and resolution.
 7. Use **Snippets** filters to narrow by app or type.
 8. Use the **Reply templates** tab to browse and copy all macros.
@@ -26,7 +26,7 @@ Internal support tool for the Essential Apps support team. Shopify only.
 
 Case Triage is browser-local and deterministic. It does not send merchant data to an API, edit Shopify data, or synchronize with HelpScout, Slack, or Savio. Savio and Help Center buttons open the authoritative sources in a separate tab.
 
-The app-specific Related Snippets card and Generated Case Outputs section are collapsible to keep the workflow compact.
+The Generated Case Outputs section is collapsible to keep the deeper triage workflow compact. Related snippets remain visible as a filterable two-column gallery on desktop.
 
 Locally added apps, ticket references, and updates are stored in this browser using `localStorage`. They are not written back to `/data/*.js`. Use **Add Ticket** and **Add Update** to add records in modals; custom apps also show these actions in the Workflow tab.
 

@@ -9,6 +9,8 @@
 </head>
 <body>
 
+  <a class="skip-link" href="#main-panel">Skip to support workspace</a>
+
   <!-- ===== TOP BAR ===== -->
   <header class="topbar">
     <a class="topbar-brand" href="https://essential-apps.com/" target="_blank" rel="noopener noreferrer" title="Essential Apps">
@@ -18,12 +20,15 @@
       <span class="topbar-brand-sub">Support</span>
     </a>
     <div class="topbar-search-wrap">
+      <label class="sr-only" for="global-search">Search the support dashboard</label>
+      <span class="topbar-search-icon" aria-hidden="true"></span>
       <input
         type="text"
         id="global-search"
         placeholder="Search snippets, issues, fixes…"
         autocomplete="off"
       >
+      <kbd class="topbar-search-shortcut" aria-hidden="true">Ctrl K</kbd>
       <div id="global-search-results"></div>
     </div>
     <button class="copy-package-btn" id="copy-full-package" type="button">
@@ -46,13 +51,18 @@
       </ul>
       <form class="sidebar-add-form" id="add-app-form">
         <label for="new-app-name">Add app</label>
-        <input id="new-app-name" type="text" placeholder="App name" autocomplete="off">
+        <input id="new-app-name" type="text" placeholder="New app name" autocomplete="off">
         <button type="submit" class="btn-secondary">Add</button>
       </form>
     </nav>
 
     <!-- ===== MAIN PANEL ===== -->
     <main class="main-panel" id="main-panel">
+
+      <!-- Selected app context -->
+      <div class="workspace-heading" id="app-header">
+        <p class="placeholder-msg">Select an app from the sidebar to get started.</p>
+      </div>
 
       <!-- Tab Bar -->
       <div class="tab-bar">
@@ -66,11 +76,8 @@
       <!-- ===== TAB: Workflow ===== -->
       <div class="tab-panel active" id="tab-workflow">
 
-        <!-- App Header + Issue Selector -->
-        <div class="card full-width workflow-intro">
-          <div id="app-header">
-            <p class="placeholder-msg">Select an app from the sidebar to get started.</p>
-          </div>
+        <!-- Issue Selector -->
+        <div class="card full-width workflow-intro issue-picker-card">
           <div id="issue-selector" class="issue-selector-wrap">
             <!-- Rendered by app.js after app is selected -->
           </div>
@@ -80,18 +87,23 @@
         </div>
 
         <!-- App-specific snippets kept near the top for fast access -->
-        <details class="card full-width workflow-priority-snippets collapsible-card" open>
-          <summary class="collapsible-card-summary">
+        <section class="full-width workflow-priority-snippets" aria-labelledby="related-snippets-title">
+          <div class="workflow-snippets-toolbar">
             <div>
-              <h3>Related Snippets</h3>
+              <h2 id="related-snippets-title">Related snippets</h2>
               <p>Quick commands and customizations for the selected app.</p>
             </div>
-            <span class="collapse-state" aria-hidden="true"></span>
-          </summary>
+            <div class="workflow-snippet-filters" aria-label="Filter related snippets">
+              <button class="workflow-filter active" type="button" data-workflow-snippet-filter="all">All</button>
+              <button class="workflow-filter" type="button" data-workflow-snippet-filter="css">CSS</button>
+              <button class="workflow-filter" type="button" data-workflow-snippet-filter="js">JS</button>
+              <button class="workflow-filter" type="button" data-workflow-snippet-filter="console">Console</button>
+            </div>
+          </div>
           <div id="workflow-snippets">
             <p class="placeholder-msg">Select an app to see related snippets.</p>
           </div>
-        </details>
+        </section>
 
         <!-- Guided case intake and copy-ready outputs -->
         <section class="card full-width case-triage-card" id="case-triage">
@@ -322,6 +334,15 @@
 
     </main>
     <!-- /main-panel -->
+
+    <!-- ===== REPLY WORKSPACE ===== -->
+    <aside class="reply-panel" id="reply-panel" aria-label="Reply workspace">
+      <div class="reply-panel-empty">
+        <span class="eyebrow">Reply draft</span>
+        <h2>Select an issue</h2>
+        <p>Choose an app and issue to prepare a copy-ready merchant reply.</p>
+      </div>
+    </aside>
 
   </div>
   <!-- /layout -->

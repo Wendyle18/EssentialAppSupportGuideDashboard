@@ -15,9 +15,10 @@
   };
 
   var state = {
-    selectedAppId: null,
-    selectedIssueId: null,
+    selectedAppId: 'essential-announcement-bar',
+    selectedIssueId: 'rtl-display-issue',
     internalNotes: '',
+    workflowSnippetFilter: 'all',
     snippetSearch: '',
     snippetFilterApp: 'all',
     snippetFilterType: 'all',
@@ -333,22 +334,30 @@
       return;
     }
 
-    container.innerHTML =
-      '<label for="issue-select">Select Issue</label>' +
-      '<select id="issue-select">' +
-      '<option value="">— Pick an issue —</option>' +
-      getIssuesForApp(state.selectedAppId).map(function (issue) {
-        var sel = state.selectedIssueId === issue.id ? ' selected' : '';
-        return '<option value="' + escapeHtml(issue.id) + '"' + sel + '>' + escapeHtml(issue.label) + '</option>';
-      }).join('') +
-      '</select>';
+    var issueLabels = {
+      'announcement-placement': 'Placement',
+      'running-line-issue': 'Running / rotating bar',
+      'rtl-display-issue': 'RTL display',
+      'announcement-geolocation': 'Geolocation targeting'
+    };
+    var issues = getIssuesForApp(state.selectedAppId);
 
-    var sel = el('issue-select');
-    if (sel) {
-      sel.addEventListener('change', function () {
-        selectIssue(this.value || null);
+    container.innerHTML =
+      '<p class="issue-selector-label">What is the merchant reporting?</p>' +
+      '<div class="issue-chip-list">' +
+      issues.map(function (issue) {
+        var active = state.selectedIssueId === issue.id ? ' active' : '';
+        var label = issueLabels[issue.id] || issue.label.replace(/\s+Issue$/i, '');
+        return '<button class="issue-chip' + active + '" type="button" data-issue-id="' + escapeHtml(issue.id) + '">' + escapeHtml(label) + '</button>';
+      }).join('') +
+      '<button class="issue-chip issue-chip-all' + (!state.selectedIssueId ? ' active' : '') + '" type="button" data-issue-id="">All issues</button>' +
+      '</div>';
+
+    qsa('[data-issue-id]', container).forEach(function (button) {
+      button.addEventListener('click', function () {
+        selectIssue(this.getAttribute('data-issue-id') || null);
       });
-    }
+    });
   }
 
   function renderFeatureRequestPanel() {
@@ -403,7 +412,10 @@
 
     var app = getApp(state.selectedAppId);
     if (!app) {
-      header.innerHTML = '<p class="placeholder-msg">Select an app from the sidebar to get started.</p>';
+      header.innerHTML =
+        '<div><span class="eyebrow">Support workspace</span>' +
+        '<h1>Choose an app</h1>' +
+        '<p>Select an app from the sidebar to open its support workflow.</p></div>';
       return;
     }
 
@@ -423,7 +435,8 @@
     header.innerHTML =
       '<div class="workflow-header-row">' +
       '<div>' +
-      '<h2>' + escapeHtml(app.name) + '</h2>' +
+      '<span class="eyebrow">Support workspace</span>' +
+      '<h1>' + escapeHtml(app.name) + '</h1>' +
       (isCustomApp(app.id)
         ? '<p>Custom app. Add references or updates below to build its workflow knowledge base.</p>'
         : '') +
@@ -733,26 +746,41 @@
     var container = el('workflow-snippets');
     if (!container) return;
 
+    qsa('[data-workflow-snippet-filter]').forEach(function (button) {
+      button.classList.toggle('active', button.getAttribute('data-workflow-snippet-filter') === state.workflowSnippetFilter);
+    });
+
     if (!state.selectedAppId) {
       container.innerHTML = '<p class="placeholder-msg">Select an app to see related snippets.</p>';
       return;
     }
 
     var snippets = (window.ESSENTIAL_SNIPPETS || []).filter(function (s) {
-      return s.appId === state.selectedAppId;
+      var matchesApp = s.appId === state.selectedAppId;
+      var matchesType = state.workflowSnippetFilter === 'all' || s.type === state.workflowSnippetFilter;
+      return matchesApp && matchesType;
     });
 
     if (!snippets.length) {
-      container.innerHTML = '<p class="placeholder-msg">No app-specific snippets for this app yet.</p>';
+      var typeName = state.workflowSnippetFilter === 'all' ? 'app-specific' : typeLabel(state.workflowSnippetFilter);
+      container.innerHTML = '<p class="placeholder-msg">No ' + escapeHtml(typeName) + ' snippets for this app yet.</p>';
       return;
     }
 
+    var selectedApp = getApp(state.selectedAppId);
     container.innerHTML = snippets.map(function (s) {
+      var label = s.label;
+      if (selectedApp && label.indexOf(selectedApp.name + ': ') === 0) {
+        label = label.slice(selectedApp.name.length + 2);
+      }
+      if (state.selectedAppId === 'essential-announcement-bar') {
+        label = label.replace(/^Announcement Bar:\s*/i, '');
+      }
       return '<div class="workflow-snippet-item">' +
         '<div class="workflow-snippet-head">' +
         '<div class="workflow-snippet-title">' +
         '<span class="snippet-type-badge type-' + escapeHtml(s.type) + '">' + typeLabel(s.type) + '</span>' +
-        '<span class="workflow-snippet-name">' + escapeHtml(s.label) + '</span>' +
+        '<span class="workflow-snippet-name">' + escapeHtml(label) + '</span>' +
         '</div>' +
         '<button type="button" class="btn-copy btn-sm" data-copy-text="' + escapeHtml(s.code) + '">Copy</button>' +
         '</div>' +
@@ -762,6 +790,69 @@
     }).join('');
 
     wireUpCopyButtons(container);
+  }
+
+  function renderReplyPanel() {
+    var panel = el('reply-panel');
+    if (!panel) return;
+
+    var app = getApp(state.selectedAppId);
+    var issue = getIssue(state.selectedIssueId);
+    if (!app || !issue) {
+      panel.innerHTML =
+        '<div class="reply-panel-empty">' +
+        '<span class="eyebrow">Reply draft</span>' +
+        '<h2>Select an issue</h2>' +
+        '<p>Choose an issue to prepare a copy-ready merchant reply.</p>' +
+        '</div>';
+      return;
+    }
+
+    var macro = getMacro(issue.macroId);
+    var replyText = macro ? applyMacroPlaceholders(macro.body) : [
+      'Hi [Merchant name],',
+      '',
+      'Thanks for reaching out. I am reviewing the ' + issue.label.toLowerCase() + ' in ' + app.name + '.',
+      '',
+      'Please send the affected storefront URL and a short screen recording so we can confirm the next step.',
+      '',
+      'Best regards,',
+      (el('case-agent-name') || {}).value || 'Wendyle',
+      'Essential Apps Support'
+    ].join('\n');
+    var snippets = (window.ESSENTIAL_SNIPPETS || []).filter(function (snippet) {
+      return snippet.appId === app.id;
+    });
+    var primarySnippet = snippets[0] || null;
+    var packageText = replyText + (primarySnippet ? '\n\n--- SNIPPET ---\n' + primarySnippet.code : '');
+    var references = getTickets().filter(function (ticket) {
+      return ticket.appId === app.id && (!ticket.issueId || ticket.issueId === issue.id);
+    });
+    if (!references.length) {
+      references = getTickets().filter(function (ticket) { return ticket.appId === app.id; });
+    }
+
+    var referencesHtml = references.slice(0, 3).map(function (ticket) {
+      return '<button type="button" class="reply-ticket-link" data-reply-ticket-app="' + escapeHtml(ticket.appId) + '" data-reply-ticket-issue="' + escapeHtml(ticket.issueId || 'all') + '">' + escapeHtml(ticket.title) + '</button>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="reply-panel-content">' +
+      '<span class="eyebrow">Reply draft</span>' +
+      '<h2>' + escapeHtml(issue.label) + '</h2>' +
+      '<pre class="reply-draft">' + escapeHtml(replyText) + '</pre>' +
+      '<div class="reply-actions">' +
+      '<button class="reply-copy-primary" type="button" data-copy-text="' + escapeHtml(packageText) + '">Copy reply' + (primarySnippet ? ' + snippet' : '') + '</button>' +
+      '<button class="reply-edit-button" type="button" data-open-reply-library>Edit</button>' +
+      '</div>' +
+      '<div class="reply-reference-section">' +
+      '<span class="eyebrow">Ticket references</span>' +
+      (referencesHtml || '<p>No matching ticket references yet.</p>') +
+      '</div>' +
+      '<p class="reply-updated">Dashboard data last updated ' + escapeHtml(document.lastModified || 'recently') + '</p>' +
+      '</div>';
+
+    wireUpCopyButtons(panel);
   }
 
   function renderWorkflowResources() {
@@ -1174,6 +1265,7 @@
   function selectApp(appId) {
     state.selectedAppId = appId;
     state.selectedIssueId = null;
+    state.workflowSnippetFilter = 'all';
     state.snippetFilterApp = appId;
     state.ticketFilterApp = appId;
     state.ticketFilterIssue = 'all';
@@ -1193,8 +1285,10 @@
 
   function selectIssue(issueId) {
     state.selectedIssueId = issueId;
+    renderIssueSelector();
     renderFeatureRequestPanel();
     renderIssueDetail();
+    renderReplyPanel();
     renderMacroList();
     announceSelection();
   }
@@ -1218,6 +1312,7 @@
     renderIssueDetail();
     renderWorkflowSnippets();
     renderWorkflowResources();
+    renderReplyPanel();
     renderMacroList();
     renderEntryFormOptions();
     renderUpdatesPanel();
@@ -1472,6 +1567,36 @@
     });
   }
 
+  function initWorkflowSnippetFilters() {
+    qsa('[data-workflow-snippet-filter]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        state.workflowSnippetFilter = this.getAttribute('data-workflow-snippet-filter') || 'all';
+        renderWorkflowSnippets();
+      });
+    });
+  }
+
+  function initReplyPanelActions() {
+    var panel = el('reply-panel');
+    if (!panel) return;
+
+    panel.addEventListener('click', function (event) {
+      var editButton = event.target.closest('[data-open-reply-library]');
+      if (editButton) {
+        activateTab('macros');
+        return;
+      }
+
+      var ticketButton = event.target.closest('[data-reply-ticket-app]');
+      if (!ticketButton) return;
+      state.ticketFilterApp = ticketButton.getAttribute('data-reply-ticket-app') || 'all';
+      state.ticketFilterIssue = ticketButton.getAttribute('data-reply-ticket-issue') || 'all';
+      renderTicketFilters();
+      renderTicketsPanel();
+      activateTab('tickets');
+    });
+  }
+
   function initModals() {
     document.addEventListener('click', function (e) {
       var openBtn = e.target.closest('[data-open-modal]');
@@ -1540,6 +1665,14 @@
   function initGlobalSearch() {
     var input = el('global-search');
     if (!input) return;
+
+    document.addEventListener('keydown', function (event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        input.focus();
+        input.select();
+      }
+    });
 
     input.addEventListener('input', function () {
       var q = this.value.toLowerCase().trim();
@@ -1754,6 +1887,8 @@
     renderTicketsPanel();
     renderUpdatesPanel();
     initTabs();
+    initWorkflowSnippetFilters();
+    initReplyPanelActions();
     initModals();
     initEntryForms();
     initSearchAndFilters();
