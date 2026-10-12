@@ -12,7 +12,7 @@ Internal support tool for the Essential Apps support team. Shopify only.
 
 1. Open the dashboard; the **Workflow** tab starts with Essential Announcement Bar as a worked example.
 2. Click an app in the left sidebar; its related snippets appear immediately below the app and issue selector.
-3. Select an issue chip. The persistent **Reply draft** panel updates with a copy-ready response and matching ticket references.
+3. Select an app-specific issue chip, or use **All issues** to reveal the shared support categories. The persistent **Reply draft** panel updates with a copy-ready response and matching ticket references.
 4. Review likely causes and recommended fixes, then follow the investigation checklist.
 5. Filter related snippets by CSS, JavaScript, or Console, then copy a snippet, reply, or combined reply package as needed.
 6. Use **Ticket references** to search stored sample tickets by app, issue, tag, customer wording, diagnosis, and resolution.

@@ -18,6 +18,7 @@
     selectedAppId: 'essential-announcement-bar',
     selectedIssueId: 'rtl-display-issue',
     internalNotes: '',
+    showAllIssues: false,
     workflowSnippetFilter: 'all',
     snippetSearch: '',
     snippetFilterApp: 'all',
@@ -340,7 +341,11 @@
       'rtl-display-issue': 'RTL display',
       'announcement-geolocation': 'Geolocation targeting'
     };
-    var issues = getIssuesForApp(state.selectedAppId);
+    var allIssues = getIssuesForApp(state.selectedAppId);
+    var appIssues = allIssues.filter(function (issue) {
+      return (issue.appIds || []).includes(state.selectedAppId);
+    });
+    var issues = state.showAllIssues ? allIssues : appIssues;
 
     container.innerHTML =
       '<p class="issue-selector-label">What is the merchant reporting?</p>' +
@@ -350,7 +355,7 @@
         var label = issueLabels[issue.id] || issue.label.replace(/\s+Issue$/i, '');
         return '<button class="issue-chip' + active + '" type="button" data-issue-id="' + escapeHtml(issue.id) + '">' + escapeHtml(label) + '</button>';
       }).join('') +
-      '<button class="issue-chip issue-chip-all' + (!state.selectedIssueId ? ' active' : '') + '" type="button" data-issue-id="">All issues</button>' +
+      '<button class="issue-chip issue-chip-all' + (state.showAllIssues ? ' active' : '') + '" type="button" data-toggle-all-issues aria-pressed="' + (state.showAllIssues ? 'true' : 'false') + '">' + (state.showAllIssues ? 'App issues only' : 'All issues') + '</button>' +
       '</div>';
 
     qsa('[data-issue-id]', container).forEach(function (button) {
@@ -358,6 +363,14 @@
         selectIssue(this.getAttribute('data-issue-id') || null);
       });
     });
+
+    var toggleAllButton = qs('[data-toggle-all-issues]', container);
+    if (toggleAllButton) {
+      toggleAllButton.addEventListener('click', function () {
+        state.showAllIssues = !state.showAllIssues;
+        renderIssueSelector();
+      });
+    }
   }
 
   function renderFeatureRequestPanel() {
@@ -1265,6 +1278,7 @@
   function selectApp(appId) {
     state.selectedAppId = appId;
     state.selectedIssueId = null;
+    state.showAllIssues = false;
     state.workflowSnippetFilter = 'all';
     state.snippetFilterApp = appId;
     state.ticketFilterApp = appId;
